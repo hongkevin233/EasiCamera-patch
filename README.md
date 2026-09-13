@@ -163,7 +163,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\verify-patches.ps1
 
 - Windows 10/11，管理员权限
 - 已安装希沃视频展台 2.1.0.4410
-- 已安装 [OBS Studio](https://obsproject.com/)（自带 OBS Virtual Camera）
 - 已准备 ffmpeg（`tools/ffmpeg/ffmpeg-9.0.1-essentials_build/`）
 
 一键安装（推荐，自动完成 1-2 步：编译 Patcher → 从原始 DLL 生成补丁 → 覆盖到展台安装目录）：
@@ -216,9 +215,7 @@ python tools\monitor-viewer.py
 
 ## 已知坑
 
-- **虚拟设备 caps 必须保持 30fps**：25fps caps 会让希沃软件堆损坏
-  （`0xc0000374`，表现为窗口透明）。桥链传输帧率默认 19fps（OBS Virtual Camera
-  实际产量 ~25fps），与 caps 无关。
+
 - x86 版 `AkVirtualCamera.dll` 需在 MTA 环境注册（脚本已处理）。
 - 所有脚本按 `$PSScriptRoot` 相对定位，任意目录解压即可用；仅 `run-bridge.cmd`
   依赖 `tools\ffmpeg\ffmpeg-9.0.1-essentials_build\`（自备 ffmpeg 放入该路径）。
