@@ -36,13 +36,10 @@ tools/ilspy/
 tools/ilspycmd/
 tools/ilspy.zip
 tools/ilspycmd.zip
-tools/ffmpeg/
 tools/ffmpeg.zip
 # akvcam 9.4.1 套装（已弃用）
 tools/akvcam/
 tools/akvcam-*.exe
-# 补丁版二进制改走 GitHub release 附件
-tools/akvcam913/
 tools/akvcam913-backup-prepatch/
 
 # ============ 二进制兜底（一律走 GitHub Releases，不入 git） ============
@@ -50,6 +47,26 @@ tools/akvcam913-backup-prepatch/
 *.dll
 *.ax
 *.msi
+
+# ============ 随仓库分发的运行时二进制（GPL 合规，开箱即用） ============
+# akvcam 9.1.3 补丁版（GPL-3.0；上游 github.com/webcamoid/akvirtualcamera，
+# 源码披露见 patches/akvcam-9.1.3-leak.patch 与 patches/akvcam-9.1.3-messageserver.cpp）
+!tools/akvcam913/
+!tools/akvcam913/**
+# 安装器残渣不入库
+tools/akvcam913/$PLUGINSDIR/
+tools/akvcam913/*.nsi
+tools/akvcam913/uninstall.exe
+# ffmpeg 9.0.1 essentials（GPLv3，源码: https://www.gyan.dev/ffmpeg/builds/）
+# 只带 ffmpeg.exe（98MB，GitHub 单文件硬限 100MB）+ LICENSE 全文
+!tools/ffmpeg/
+tools/ffmpeg/**
+!tools/ffmpeg/ffmpeg-9.0.1-essentials_build/
+tools/ffmpeg/ffmpeg-9.0.1-essentials_build/**
+!tools/ffmpeg/ffmpeg-9.0.1-essentials_build/bin/
+tools/ffmpeg/ffmpeg-9.0.1-essentials_build/bin/**
+!tools/ffmpeg/ffmpeg-9.0.1-essentials_build/bin/ffmpeg.exe
+!tools/ffmpeg/ffmpeg-9.0.1-essentials_build/LICENSE
 
 # ============ 构建产物 ============
 build*/
@@ -66,7 +83,7 @@ cmake_install.cmake
 .vs/
 Debug/
 Release/
-x64/
+/x64/
 Win32/
 
 # ============ 上游源码树（仅本地参考，补丁副本见 patches/） ============

@@ -1,0 +1,3 @@
+Commit hash: baf660088aff34cd597cedc38d398e18aa2f1f3e
+Build log URL: https://github.com/webcamoid/akvirtualcamera/actions/runs/10533585909
+
