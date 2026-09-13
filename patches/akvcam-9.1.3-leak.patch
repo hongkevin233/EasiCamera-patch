@@ -1,0 +1,161 @@
+diff --git a/notes/akvcam-9.1.3-src/messageserver.cpp b/notes/akvirtualcamera-9.1.3/dshow/PlatformUtils/src/messageserver.cpp
+index 330370b..1f07471 100644
+--- a/notes/akvcam-9.1.3-src/messageserver.cpp
++++ b/notes/akvirtualcamera-9.1.3/dshow/PlatformUtils/src/messageserver.cpp
+@@ -21,6 +21,7 @@
+ #include <atomic>
+ #include <chrono>
+ #include <condition_variable>
++#include <map>
+ #include <mutex>
+ #include <thread>
+ #include <windows.h>
+@@ -155,6 +156,83 @@ BOOL AkVCam::MessageServer::sendMessage(const std::string &pipeName,
+     return sendMessage(pipeName, *message, message, timeout);
+ }
+ 
++    // EASI patch: persistent client pipe handles.
++    // CallNamedPipeA creates a new pipe connection per call, and the server
++    // side spawns a named pipe instance + a worker thread for EVERY message
++    // (one per video frame). That churn leaks ~1 handle/frame and burns CPU.
++    // Keep one connection per pipe name and reuse it with TransactNamedPipe.
++    namespace {
++        std::mutex &clientPipesMutex()
++        {
++            static std::mutex mutex;
++
++            return mutex;
++        }
++
++        std::map<std::string, HANDLE> &clientPipes()
++        {
++            static std::map<std::string, HANDLE> pipes;
++
++            return pipes;
++        }
++
++        void closeClientPipe(const std::string &pipeName)
++        {
++            auto &pipes = clientPipes();
++            auto it = pipes.find(pipeName);
++
++            if (it == pipes.end())
++                return;
++
++            if (it->second != INVALID_HANDLE_VALUE)
++                CloseHandle(it->second);
++
++            pipes.erase(it);
++        }
++
++        HANDLE acquireClientPipe(const std::string &pipeName,
++                                 uint32_t timeout)
++        {
++            auto &pipes = clientPipes();
++            auto it = pipes.find(pipeName);
++
++            if (it != pipes.end())
++                return it->second;
++
++            DWORD waitMs = timeout == 0? 1000: (std::min)(DWORD(timeout), DWORD(1000));
++
++            for (int i = 0; i < 5; i++) {
++                HANDLE pipe = CreateFileA(pipeName.c_str(),
++                                          GENERIC_READ | GENERIC_WRITE,
++                                          0,
++                                          nullptr,
++                                          OPEN_EXISTING,
++                                          0,
++                                          nullptr);
++
++                if (pipe != INVALID_HANDLE_VALUE) {
++                    DWORD mode = PIPE_READMODE_MESSAGE;
++                    SetNamedPipeHandleState(pipe, &mode, nullptr, nullptr);
++                    pipes[pipeName] = pipe;
++
++                    return pipe;
++                }
++
++                auto lastError = GetLastError();
++
++                if (lastError == ERROR_PIPE_BUSY) {
++                    WaitNamedPipeA(pipeName.c_str(), waitMs);
++
++                    continue;
++                }
++
++                std::this_thread::sleep_for(std::chrono::milliseconds(200));
++            }
++
++            return INVALID_HANDLE_VALUE;
++        }
++    }
++
+ BOOL AkVCam::MessageServer::sendMessage(const std::string &pipeName,
+                                         const Message &messageIn,
+                                         Message *messageOut,
+@@ -164,35 +242,43 @@ BOOL AkVCam::MessageServer::sendMessage(const std::string &pipeName,
+     AkLogDebug() << "Pipe: " << pipeName << std::endl;
+     AkLogDebug() << "Message ID: " << stringFromMessageId(messageIn.messageId) << std::endl;
+ 
+-    // CallNamedPie can sometimes return false without ever sending any data to
+-    // the server, try many times before returning.
+-    bool result;
++    std::lock_guard<std::mutex> lock(clientPipesMutex());
+ 
+     for (int i = 0; i < 5; i++) {
+-        DWORD bytesTransferred = 0;
+-        result = CallNamedPipeA(pipeName.c_str(),
+-                                const_cast<Message *>(&messageIn),
+-                                DWORD(sizeof(Message)),
+-                                messageOut,
+-                                DWORD(sizeof(Message)),
+-                                &bytesTransferred,
+-                                timeout);
+-
+-        if (result)
++        auto pipe = acquireClientPipe(pipeName, timeout);
++
++        if (pipe == INVALID_HANDLE_VALUE)
+             break;
+ 
+-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
++        Message reply;
++        DWORD bytesTransferred = 0;
++        auto result = TransactNamedPipe(pipe,
++                                        const_cast<Message *>(&messageIn),
++                                        DWORD(sizeof(Message)),
++                                        &reply,
++                                        DWORD(sizeof(Message)),
++                                        &bytesTransferred,
++                                        nullptr);
++
++        if (result && bytesTransferred == sizeof(Message)) {
++            if (messageOut)
++                *messageOut = reply;
++
++            return TRUE;
++        }
++
++        // Broken or desynchronized connection: drop it and reconnect.
++        closeClientPipe(pipeName);
++        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+     }
+ 
+-    if (!result) {
+-        AkLogError() << "Error sending message" << std::endl;
+-        auto lastError = GetLastError();
++    AkLogError() << "Error sending message" << std::endl;
++    auto lastError = GetLastError();
+ 
+-        if (lastError)
+-            AkLogError() << stringFromError(lastError) << std::endl;
+-    }
++    if (lastError)
++        AkLogError() << stringFromError(lastError) << std::endl;
+ 
+-    return result;
++    return FALSE;
+ }
+ 
+ AkVCam::MessageServerPrivate::MessageServerPrivate(MessageServer *self):

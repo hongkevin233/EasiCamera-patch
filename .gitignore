@@ -1,0 +1,82 @@
+# ============ 版权红线：绝对不入库 ============
+# 希沃 EasiCamera 安装包与安装目录（CVTE/Seewo 版权所有）
+pkg/
+easi-soft/
+# B870 官方随机软件（第三方版权）
+B870/
+# 反编译产物（含希沃版权代码）
+analysis/
+# 补丁后的希沃 DLL（由 Patcher.cs 从用户自有副本生成）
+connector/patched/*.dll
+connector/*.bak
+# Patcher 编译产物与第三方库副本（自备 / 自动下载）
+connector/Patcher.exe
+connector/Mono.Cecil.dll
+
+# ============ 崩溃转储 / 日志 / 运行时产物（含内存数据，敏感） ============
+dumps/
+tools/dumps/
+logs/
+*.dmp
+*.log
+*.txt.orig
+# 运行时输出（桥日志 / dump 分析 / 脚本 result / marker / 冒烟结果）
+tools/*.txt
+tools/smoke50-*.csv
+*.done
+*.marker
+
+# ============ 第三方工具二进制（自备 / release 挂载） ============
+BuildTools/
+ffdshow2/
+tools/procdump/
+tools/7z*
+tools/dotnet/
+tools/ilspy/
+tools/ilspycmd/
+tools/ilspy.zip
+tools/ilspycmd.zip
+tools/ffmpeg/
+tools/ffmpeg.zip
+# akvcam 9.4.1 套装（已弃用）
+tools/akvcam/
+tools/akvcam-*.exe
+# 补丁版二进制改走 GitHub release 附件
+tools/akvcam913/
+tools/akvcam913-backup-prepatch/
+
+# ============ 二进制兜底（一律走 GitHub Releases，不入 git） ============
+*.exe
+*.dll
+*.ax
+*.msi
+
+# ============ 构建产物 ============
+build*/
+# 本地 release 打包目录（build-release.ps1 生成，zip 后挂 GitHub release）
+release/
+*.obj
+*.pdb
+*.ilk
+*.exp
+*.lib
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+.vs/
+Debug/
+Release/
+x64/
+Win32/
+
+# ============ 上游源码树（仅本地参考，补丁副本见 patches/） ============
+notes/
+!patches/
+
+# ============ 其他 ============
+*.7z
+*.zip
+._*
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
