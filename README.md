@@ -1,7 +1,7 @@
 # easi-connector
 
-让希沃视频展台（Seewo EasiCamera 2.1.0.4410）支持第三方 USB 摄像头/展台的桥接方案。
-针对悦教 YJZ-B870 壁挂展台开发，适用于任何能出现在 DirectShow 设备列表里的摄像头。
+让希沃视频展台（Seewo EasiCamera 2.1.0.4410）支持第三方 USB 摄像头/展台的桥接方案
+，适用于任何能出现在 DirectShow 设备列表里的摄像头。
 
 > 背景：希沃视频展台软件内置白名单校验（`CameraExtension.IsSeewoCamera`），只认希沃自家设备，
 > 第三方展台接入后软件直接不显示画面。本方案通过 IL 补丁放行第三方设备，
@@ -11,9 +11,6 @@
 
 ```
 YJZ-B870 (USB/UVC)
-   │
-   ▼
-OBS Virtual Camera            ← 任意 DirectShow 源，OBS 负责采集
    │
    ▼
 ffmpeg  (dshow → rawvideo bgr24)
